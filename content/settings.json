@@ -1,0 +1,4 @@
+{
+  "limits": {"bkk": 5000, "cm": 7000, "cr": 5000, "pt": 5000},
+  "maxReviewPages": 20
+}
