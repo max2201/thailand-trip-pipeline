@@ -10,6 +10,42 @@ URL = "https://ru.trip.com/restapi/soa2/34308/getHotelCommentInfo"
 HEAD = {"platform": "PC", "cver": "0", "bu": "IBU", "group": "trip", "locale": "ru-RU", "timezone": "7", "currency": "RUB", "pageId": "10320668147", "isSSR": False}
 
 
+AWARD = re.compile(r"№\s*(\d+)\s+в\s+списке\s+«([^»]+)»\s+во?\s+(.+)")
+PROMO_SHORT = {"Предложение для зарегистрированных пользователей": "цена для зарегистрированных"}
+
+
+def marks(it):
+    """Отметки самого trip.com в выдаче. Пустые не храним, чтобы файлы оставались маленькими.
+    m — значок партнёра (3 — «высокая репутация», 4 — «отличная репутация»),
+    a — место в рейтинге trip.com [номер, название списка, где], n — «Работает с 2026», «Отремонтирован в 2025»…,
+    ad — платное место в выдаче, p — акции, d — скидка в %, r — короткие выводы trip.com из отзывов.
+    Метки вроде «осталось 1 номер» и «бронировали час назад» меняются каждую минуту — их не берём."""
+    hi = it.get("hotelInfo") or {}
+    rt = ((it.get("roomInfo") or [{}])[0] or {}).get("roomTags") or {}
+    o = {}
+    mt = (hi.get("medalInfo") or {}).get("medalType")
+    if mt: o["m"] = mt
+    ta = hi.get("topAwardInfo") or {}
+    if ta.get("tagTitle"):
+        m = AWARD.search(re.sub(r"\s+", " ", ta["tagTitle"]))
+        o["a"] = [int(m.group(1)), m.group(2), m.group(3).strip()] if m else [ta.get("hotelRank") or 0, ta["tagTitle"], ""]
+    nt = [t.get("tagTitle") for t in (hi.get("hotelTags") or {}).get("hotelNameTags") or [] if t.get("tagTitle")]
+    if nt: o["n"] = nt
+    if (hi.get("advertiseInfo") or {}).get("isAdHotel"): o["ad"] = 1
+    pr = list(dict.fromkeys(PROMO_SHORT.get(t["tagTitle"], t["tagTitle"]) for t in rt.get("promotionTags") or [] if t.get("tagTitle")))
+    if pr: o["p"] = pr
+    for t in rt.get("discountTags") or []:
+        m = re.search(r"(\d+)\s*%", t.get("tagTitle") or "")
+        if m: o["d"] = int(m.group(1)); break
+    rv = []
+    for t in (hi.get("commentInfo") or {}).get("oneSentenceComment") or []:
+        for part in (t.get("tagTitle") or "").split("|"):
+            part = part.strip()
+            if part and part not in rv: rv.append(part)
+    if rv: o["r"] = rv[:3]
+    return o
+
+
 def parse(it):
     hi=it["hotelInfo"]; pos=hi.get("positionInfo",{}); ci=hi.get("commentInfo",{}) or {}
     mc=(pos.get("mapCoordinate") or [{}])[0]
@@ -21,7 +57,7 @@ def parse(it):
     if m: tot=int(re.sub(r"\D","",m.group(1)))
     return {"id":int(hi["summary"]["hotelId"]),"name":hi["nameInfo"]["name"],"cat":(hi.get("hotelCategory") or {}).get("categoryName"),
       "star":(hi.get("hotelStar") or {}).get("star"),"lat":mc.get("latitude"),"lng":mc.get("longitude"),"zone":pos.get("address"),"zones":pos.get("zoneNames"),
-      "score":ci.get("commentScore"),"cnt":ci.get("commenterNumber"),"night":pi.get("price"),"total":tot,"room":(r.get("summary") or {}).get("physicsName"),"tags":tags,"status":(hi.get("statusInfo") or {}).get("status")}
+      "score":ci.get("commentScore"),"cnt":ci.get("commenterNumber"),"night":pi.get("price"),"total":tot,"room":(r.get("summary") or {}).get("physicsName"),"tags":tags,"status":(hi.get("statusInfo") or {}).get("status"),"tc":marks(it)}
 
 
 def crawl_list(city_id, ci, co, log=print, max_pages=400):

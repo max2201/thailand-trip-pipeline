@@ -60,7 +60,8 @@ def build_trip(log=print):
           for hid in sv|{s["anchor"],s["proposed"]}:
               if hid not in lists[s["id"]] and hid in META:
                   m=dict(META[hid]); same=m.get("_ci")==s["ci"].replace("-","") and m.get("_co")==s["co"].replace("-","")
-                  if not same: m.update(night=None,total=None,tags=[])
+                  # снимок с других дат: без цены и без акций, но значки и рейтинги отеля оставляем
+                  if not same: m.update(night=None,total=None,tags=[],tc={k:v for k,v in (m.get("tc") or {}).items() if k in ("m","a","n","r")})
                   lists[s["id"]][hid]=m
       meta={}
       for s in stops:
@@ -144,7 +145,8 @@ def build_trip(log=print):
               total=m.get("total") or (night*s["nights"] if night else None)
               dorm,shared,nowin=room_flags(m.get("room"),m.get("name"))
               free=any("Бесплатная отмена" in (t or "") for t in m.get("tags") or [])
-              P[hid]=[round(total/ s["nights"]) if total else night,total,int(free),m.get("room") or "",int(dorm),int(shared),int(nowin)]
+              # 8-й элемент — отметки trip.com (см. tripcom.marks), 0 если их нет
+              P[hid]=[round(total/ s["nights"]) if total else night,total,int(free),m.get("room") or "",int(dorm),int(shared),int(nowin),m.get("tc") or 0]
           an=meta.get(s["anchor"]) or {}
           so=dict(s); so["limit"]=LIMIT.get(city,5000); so["prices"]=P; so["alat"]=fnum(an.get("lat")); so["alng"]=fnum(an.get("lng"))
           OUT["stops"].append(so)
