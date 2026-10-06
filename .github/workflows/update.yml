@@ -1,7 +1,7 @@
 name: Update data
 on:
   schedule:
-    - cron: "0 1 * * *"   # каждый день в 01:00 UTC (08:00 в Бангкоке)
+    - cron: "17 1 * * *"   # каждый день в 01:17 UTC (08:17 в Бангкоке и Красноярске); не ровно в :00 — такие запуски GitHub часто пропускает
   workflow_dispatch:
     inputs:
       mode:
