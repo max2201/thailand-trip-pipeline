@@ -18,7 +18,7 @@ service cloud.firestore {
         && request.resource.data.status == 'queued'
         && request.resource.data.stop is string && request.resource.data.stop.size() <= 4
         && request.resource.data.hotels is list
-        && request.resource.data.hotels.size() > 0 && request.resource.data.hotels.size() <= 15
+        && request.resource.data.hotels.size() > 0
         && request.resource.data.name is string && request.resource.data.name.size() <= 30
         && request.resource.data.t is int;
       // Остановку, отели и автора заявки поменять нельзя; удалять нельзя.
