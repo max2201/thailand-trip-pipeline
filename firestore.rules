@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Только одна поездка с секретным кодом из index.html; всё остальное закрыто.
+    match /trips/{trip}/people/{person} {
+      allow read: if trip == 'thai2026-6hvxyynirl';
+      allow write: if trip == 'thai2026-6hvxyynirl'
+        && request.resource.data.keys().hasOnly(['m', 't', 'name'])
+        && request.resource.data.m is map
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 30;
+    }
+    // Заявки на подробные отчёты (кнопка на сайте) и сами отчёты (пишет обработчик, см. REPORTS.md).
+    match /trips/{trip}/reports/{rid} {
+      allow read: if trip == 'thai2026-6hvxyynirl';
+      allow create: if trip == 'thai2026-6hvxyynirl'
+        && request.resource.data.keys().hasOnly(['stop', 'hotels', 'name', 't', 'status'])
+        && request.resource.data.status == 'queued'
+        && request.resource.data.stop is string && request.resource.data.stop.size() <= 4
+        && request.resource.data.hotels is list
+        && request.resource.data.hotels.size() > 0 && request.resource.data.hotels.size() <= 15
+        && request.resource.data.name is string && request.resource.data.name.size() <= 30
+        && request.resource.data.t is int;
+      // Остановку, отели и автора заявки поменять нельзя; удалять нельзя.
+      allow update: if trip == 'thai2026-6hvxyynirl'
+        && request.resource.data.keys().hasOnly(['stop', 'hotels', 'name', 't', 'status', 'w', 'prog', 'r', 'err', 'done'])
+        && request.resource.data.stop == resource.data.stop
+        && request.resource.data.hotels == resource.data.hotels
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.status in ['queued', 'working', 'ready', 'error', 'cancelled'];
+    }
+  }
+}

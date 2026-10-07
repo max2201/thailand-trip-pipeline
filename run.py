@@ -5,6 +5,7 @@
   python run.py build             анализ → site-data/ (index.json, cities/, prices/)
   python run.py all               prices + reviews + build
   python run.py prices --stop s4  только одна остановка
+  python run.py report …          подробный отчёт по кнопке на сайте (см. REPORTS.md и tripdata/report.py)
 """
 import argparse, datetime, os, sys, time
 from concurrent.futures import ThreadPoolExecutor
@@ -93,6 +94,9 @@ def cmd_build(args):
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "report":
+        from tripdata.report import main as report_main
+        return report_main(sys.argv[2:])
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("command", choices=["prices", "reviews", "build", "all"])
     p.add_argument("--stop", nargs="*", help="только эти остановки (s1 … s7)")
