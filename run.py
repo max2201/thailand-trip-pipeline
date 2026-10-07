@@ -81,6 +81,21 @@ def cmd_reviews(args):
                 if done % 100 == 0: save_hotels(city, hot); log(f"  {done}/{len(todo)}")
         save_hotels(city, hot)
         log(f"{city}: готово {done}/{len(todo)}")
+        # Год ремонта (и уточнённый год открытия) появился позже: докачиваем карточки отелей, где его ещё не искали.
+        back = sorted(i for i in ids if i in hot and "rn" not in (hot[i].get("fac") or {}))
+        if back:
+            log(f"{city}: год открытия и ремонта — дозагрузка карточек для {len(back)} отелей")
+            got = 0
+            with ThreadPoolExecutor(args.workers) as ex:
+                for hid, f in ex.map(lambda h: (h, tripcom.fac(h)), back):
+                    if not f.get("ok"): continue
+                    fac = hot[hid].setdefault("fac", {})
+                    fac["rn"] = f.get("rn", "")
+                    if f.get("yr"): fac["yr"] = f["yr"]
+                    got += 1
+                    if got % 200 == 0: save_hotels(city, hot); log(f"  {got}/{len(back)}")
+            save_hotels(city, hot)
+            log(f"{city}: карточек обновлено {got}/{len(back)}")
 
 
 def cmd_build(args):
