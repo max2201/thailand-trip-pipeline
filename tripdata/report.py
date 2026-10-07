@@ -16,7 +16,7 @@
      report fail <id> "причина" — отказ с понятной причиной.
 Тексты отзывов в репозиторий не попадают: work/ в .gitignore.
 """
-import datetime, json, math, os, re, sys, time
+import base64, datetime, gzip, json, math, os, re, sys, time
 from pathlib import Path
 import requests
 from . import tripcom
@@ -658,10 +658,15 @@ def cmd_put(rid):
            "cols": [{"id": h["id"], "name": h["name"]} for h in H], "compare": auto + rows, "hotels": H}
     body = json.dumps(out, ensure_ascii=False, separators=(",", ":"))
     (base / "final.json").write_text(body, encoding="utf-8")
-    if len(body.encode()) > 900_000:
-        log(f"СЛИШКОМ БОЛЬШОЙ ОТЧЁТ ({len(body.encode()) // 1024} КБ, предел 900) — сократи цитаты и списки"); sys.exit(2)
-    fs_patch(rid, {"status": "ready", "r": body, "prog": "", "done": now_ms()})
-    log(f"ОТПРАВЛЕНО: {len(body.encode()) // 1024} КБ, отелей {len(H)}")
+    # Документ Firestore — до 1 МБ. Большой отчёт (много отелей) сжимаем: «gz:» + base64 от gzip, сайт распакует сам.
+    raw = body
+    if len(body.encode()) > 700_000:
+        raw = "gz:" + base64.b64encode(gzip.compress(body.encode(), 9)).decode()
+        log(f"сжал отчёт: {len(body.encode()) // 1024} КБ → {len(raw) // 1024} КБ")
+    if len(raw.encode()) > 1_000_000:
+        log(f"СЛИШКОМ БОЛЬШОЙ ОТЧЁТ ({len(raw.encode()) // 1024} КБ даже в сжатом виде, предел ~1000) — сократи цитаты и списки"); sys.exit(2)
+    fs_patch(rid, {"status": "ready", "r": raw, "prog": "", "done": now_ms()})
+    log(f"ОТПРАВЛЕНО: {len(raw.encode()) // 1024} КБ, отелей {len(H)}")
 
 
 def main(argv):
