@@ -115,10 +115,13 @@ def fac(hid):
                 i=h.find('facilityDesc\\":\\"'+n); (no if 'defect' in h[i:i+220] else yes).append(n)
             a=re.findall(r'address\\?"\s*:\s*\\?"([^"\\]{5,160})',h)
             yr=re.findall(r'(?:Год открытия|Открыт)[^0-9]{0,30}(\d{4})',h)
-            return {"yes":yes,"no":no,"addr":a[0] if a else "","yr":yr[0] if yr else ""}
+            # год открытия и год последнего ремонта из данных страницы: "openYear":"2015", "fitmentYear":"2018"
+            op=re.search(r'openYear\\*"\s*:\s*\\*"(\d{4})',h); rn=re.search(r'fitmentYear\\*"\s*:\s*\\*"(\d{4})',h)
+            return {"yes":yes,"no":no,"addr":a[0] if a else "","yr":(op.group(1) if op else "") or (yr[0] if yr else ""),
+                    "rn":rn.group(1) if rn else "","ok":"hotelDetailResponse" in h or bool(names)}
         except Exception: pass
         time.sleep(2)
-    return {"yes":[],"no":[],"addr":"","yr":""}
+    return {"yes":[],"no":[],"addr":"","yr":"","rn":"","ok":False}
 
 
 def fetch_reviews(hid, max_pages=20):

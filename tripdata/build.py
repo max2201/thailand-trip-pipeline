@@ -130,7 +130,7 @@ def build_trip(log=print):
             sc=score,cl=cr.get("ratingRoom"),fa=cr.get("ratingFacility"),lo=cr.get("ratingLocation"),se=cr.get("ratingService"),rv=cr.get("showCommentNum") or d.get("total") or 0,an=n,tot=d.get("total") or n,
             ng=round(a["neg"]/max(1,n)*100,1) if n else None,ns=round(c["noise"]/max(1,n)*100,1) if n else None,
             ro=c["roach"],ror=a["crec"]["roach"],at=c["ants"],sm=c["smell"],smr=a["crec"]["smell"],dm=c["damp"],dmr=a["crec"]["damp"],ins=c["insect"],insr=a["crec"]["insect"],
-            am=am,amn=len(yes),yr=d["fac"].get("yr",""),pr=pros,co=cons[:5],cp=comp,sv=int(hid in sv)))
+            am=am,amn=len(yes),yr=d["fac"].get("yr",""),ry=d["fac"].get("rn",""),pr=pros,co=cons[:5],cp=comp,sv=int(hid in sv)))
       OUT["cities"][city]={"hotels":H,"meds":MEDS}
       for s in stops:
           L=lists[s["id"]]; P={}
