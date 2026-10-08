@@ -291,6 +291,8 @@ def export_site(D, out=SITE_DATA, built_at=""):
         cities[c] = {"meds": o["meds"], "count": len(o["hotels"])}
     idx = {"stops": stops, "guides": D["guides"], "tripwide": D["tripwide"], "cities": cities,
            "saved": read_json(CONTENT / "saved.json", {}), "builtAt": built_at,
+           # координаты мест для карт на вкладках «Что посмотреть», «Поездки», «События»: город → вид → название → [lat, lng]
+           "places": read_json(CONTENT / "places.json", {}),
            "reviews": sum(sum(h["an"] for h in o["hotels"]) for o in D["cities"].values())}
     write_json(out / "index.json", idx)
     return idx

@@ -165,7 +165,19 @@ def fs_open():
     return sorted(ready, key=lambda d: d.get("t") or 0)
 
 
+def check_cancelled(rid):
+    """Заявку отменили на сайте — прекращаем работу (код выхода 4), чтобы не тратить лимиты."""
+    try:
+        d = fs_get(rid)
+    except Exception as e:
+        log("не смог проверить заявку:", e); return
+    if d and d.get("status") == "cancelled":
+        log("ЗАЯВКА ОТМЕНЕНА НА САЙТЕ — брось её (ничего больше не делай по ней) и вернись к `report wait`")
+        sys.exit(4)
+
+
 def set_status(rid, text):
+    check_cancelled(rid)
     try:
         fs_patch(rid, {"prog": text[:200]})
     except Exception as e:
@@ -231,6 +243,7 @@ def cmd_status(rid, text):
 
 
 def cmd_fail(rid, text):
+    check_cancelled(rid)
     fs_patch(rid, {"status": "error", "err": text[:500], "prog": "", "done": now_ms()})
     log("заявка закрыта с ошибкой")
 
@@ -408,6 +421,7 @@ def _stop(stop_id):
 
 
 def cmd_fetch(rid):
+    check_cancelled(rid)
     d = fs_get(rid)
     if not d: raise SystemExit("нет такой заявки")
     s, city, prices, snap = _stop(d["stop"])
@@ -516,6 +530,7 @@ def _read_notes(hd, revs):
 
 
 def cmd_tally(rid):
+    check_cancelled(rid)
     base = WORK / rid
     req = json.loads((base / "request.json").read_text(encoding="utf-8"))
     ok = True
@@ -665,6 +680,7 @@ def cmd_put(rid):
         log(f"сжал отчёт: {len(body.encode()) // 1024} КБ → {len(raw) // 1024} КБ")
     if len(raw.encode()) > 1_000_000:
         log(f"СЛИШКОМ БОЛЬШОЙ ОТЧЁТ ({len(raw.encode()) // 1024} КБ даже в сжатом виде, предел ~1000) — сократи цитаты и списки"); sys.exit(2)
+    check_cancelled(rid)
     fs_patch(rid, {"status": "ready", "r": raw, "prog": "", "done": now_ms()})
     log(f"ОТПРАВЛЕНО: {len(raw.encode()) // 1024} КБ, отелей {len(H)}")
 
